@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  nested-clusters-helm-chart:
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-04-01T13:17:29.909582-05:00"
+    description: Creates namespaces and per-namespace resource quotas for nested clusters
+    digest: dd808a8909ca7a8beb68cd45645f4e2d97520461969ddb249bc39be2d0eebe97
+    name: nested-clusters-helm-chart
+    type: application
+    urls:
+    - https://vadimzharov.github.io/nested-clusters-helm-chart/nested-clusters-helm-chart-0.0.1.tgz
+    version: 0.0.1
+generated: "2026-04-01T13:17:29.909174-05:00"
