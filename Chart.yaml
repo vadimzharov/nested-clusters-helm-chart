@@ -2,5 +2,5 @@ apiVersion: v2
 name: nested-clusters-helm-chart
 description: Creates namespaces and per-namespace resource quotas for nested clusters
 type: application
-version: 0.1.0
+version: 0.0.1
 appVersion: "1.0.0"
