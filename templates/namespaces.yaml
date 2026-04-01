@@ -1,0 +1,65 @@
+{{- $defaultQuota := .Values.defaultQuota }}
+{{- range $index, $ns := .Values.k8snestednamespaces }}
+{{- if not $ns.name }}
+{{- fail (printf "k8snestednamespaces[%d].name is required" $index) }}
+{{- end }}
+{{- $quota := dict }}
+{{- if $defaultQuota }}
+{{- $quota = mergeOverwrite $quota $defaultQuota }}
+{{- end }}
+{{- if $ns.quota }}
+{{- $quota = mergeOverwrite $quota $ns.quota }}
+{{- end }}
+{{- $requests := default (dict) $quota.requests }}
+{{- $limits := default (dict) $quota.limits }}
+{{- $storageClassRequests := default (dict) $quota.storageClassRequests }}
+{{- $hasHard := or
+  $requests.cpu
+  $requests.memory
+  $requests.storage
+  $limits.cpu
+  $limits.memory
+  $limits.storage
+  (gt (len $storageClassRequests) 0)
+}} 
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ $ns.name | quote }}
+  annotations:
+    helm.sh/resource-policy: keep
+{{- if $hasHard }}
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: nested-k8s-quota
+  namespace: {{ $ns.name | quote }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  hard:
+{{- if $requests.cpu }}
+    requests.cpu: {{ $requests.cpu | quote }}
+{{- end }}
+{{- if $requests.memory }}
+    requests.memory: {{ $requests.memory | quote }}
+{{- end }}
+{{- if $requests.storage }}
+    requests.storage: {{ $requests.storage | quote }}
+{{- end }}
+{{- if $limits.cpu }}
+    limits.cpu: {{ $limits.cpu | quote }}
+{{- end }}
+{{- if $limits.memory }}
+    limits.memory: {{ $limits.memory | quote }}
+{{- end }}
+{{- if $limits.storage }}
+    limits.ephemeral-storage: {{ $limits.storage | quote }}
+{{- end }}
+{{- range $className := keys $storageClassRequests | sortAlpha }}
+    {{ printf "%s.storageclass.storage.k8s.io/requests.storage" $className }}: {{ index $storageClassRequests $className | quote }}
+{{- end }}
+---
+{{- end }}
+{{- end }}

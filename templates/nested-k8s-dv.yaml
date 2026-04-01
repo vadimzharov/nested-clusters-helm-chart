@@ -1,0 +1,24 @@
+{{- with .Values.k8sTemplateParams.nestedK8sDv }}
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: {{ required "nestedK8sDv.name is required" .name | quote }}
+  namespace: {{ required "k8sTemplateParams.namespace is required" $.Values.k8sTemplateParams.namespace | quote }}
+  annotations:
+    cdi.kubevirt.io/storage.deleteAfterCompletion: "false"
+    cdi.kubevirt.io/storage.bind.immediate.requested: ""
+spec:
+  storage:
+    accessModes:
+{{- range $index, $mode := required "nestedK8sDv.accessModes is required" .accessModes }}
+      - {{ $mode | quote }}
+{{- end }}
+    resources:
+      requests:
+        storage: {{ required "nestedK8sDv.storage is required" .storage | quote }}
+    volumeMode: {{ required "nestedK8sDv.volumeMode is required" .volumeMode | quote }}
+    storageClassName: {{ required "nestedK8sDv.storageClassName is required" .storageClassName | quote }}
+  source:
+    registry:
+      url: {{ required "nestedK8sDv.source.registry.url is required" .source.registry.url | quote }}
+{{- end }}

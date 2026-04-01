@@ -1,0 +1,95 @@
+# Default ResourceQuota applied to each namespace when namespace-specific quota is not provided.
+# Optional: if removed entirely, no default quota is used.
+defaultQuota:
+  # Optional: CPU/memory/storage request quotas.
+  requests:
+    # Optional: maps to ResourceQuota hard.requests.cpu.
+    cpu: "1"
+    # Optional: maps to ResourceQuota hard.requests.memory.
+    memory: "2Gi"
+    # Optional: maps to ResourceQuota hard.requests.storage.
+    storage: "10Gi"
+  # Optional: CPU/memory/ephemeral-storage limit quotas.
+  limits:
+    # Optional: maps to ResourceQuota hard.limits.cpu.
+    cpu: "2"
+    # Optional: maps to ResourceQuota hard.limits.memory.
+    memory: "4Gi"
+    # Optional: maps to ResourceQuota hard.limits.ephemeral-storage.
+    storage: "20Gi"
+  # Optional: per-storageclass storage request quotas.
+  # Key = storage class name, value = max requested storage.
+  storageClassRequests:
+    gp3: "500Gi"
+    fast-ssd: "100Gi"
+
+# Mandatory: list of namespaces managed by this chart.
+# Each entry must include `name`.
+k8snestednamespaces:
+  - name: vmo-golden-images
+    # Optional: namespace-specific quota override (merged over defaultQuota).
+    # If omitted, defaultQuota applies.
+    # quota:
+    #   requests:
+    #     cpu: "1"
+    #     memory: "2Gi"
+    #     storage: "10Gi"
+    #   limits:
+    #     cpu: "2"
+    #     memory: "4Gi"
+    #     storage: "20Gi"
+    #   storageClassRequests:
+    #     gp3: "100Gi"
+
+# Optional: creates DataVolume and/or VmTemplate when nested blocks are set.
+k8sTemplateParams:
+  # Mandatory when nestedK8sDv or k8sVmTemplate is set.
+  namespace: "vmo-golden-images"
+
+  # Optional: creates DataVolume when this block exists.
+  nestedK8sDv:
+    # Mandatory when nestedK8sDv is set.
+    name: "nested-k8s-ubuntu-2204"
+    # Mandatory when nestedK8sDv is set.
+    accessModes:
+      - ReadWriteMany
+    # Mandatory when nestedK8sDv is set.
+    storage: "50Gi"
+    # Mandatory when nestedK8sDv is set.
+    volumeMode: "Block"
+    # Mandatory when nestedK8sDv is set.
+    storageClassName: "freenas-iscsi-csi"
+    # Mandatory when nestedK8sDv is set.
+    source:
+      registry:
+        url: "docker://us-docker.pkg.dev/palette-images/palette/virtual-machine-orchestrator/os/ubuntu-container-disk:22.04"
+
+  # Optional: creates VmTemplate when this block exists.
+  k8sVmTemplate:
+    # Mandatory when k8sVmTemplate is set.
+    name: "ubuntu-2204-k8s"
+    # Mandatory when k8sVmTemplate is set.
+    # Used for both VmTemplate spec.description and spec.displayName.
+    description: "Virtual Kubernetes node (Ubuntu)"
+    # Mandatory when k8sVmTemplate is set.
+    runStrategy: "Always"
+    # Mandatory when k8sVmTemplate is set.
+    # Mapped to spec.template.spec.networks[].multus.networkName.
+    networkName: "default/home-vlan-90"
+    # Mandatory when k8sVmTemplate is set.
+    # Mapped to dataVolumeTemplates[].spec.storage.resources.requests.storage.
+    storage: "50Gi"
+    # Mandatory when k8sVmTemplate is set.
+    cpu: 4
+    # Mandatory when k8sVmTemplate is set.
+    memory: "6Gi"
+
+# Mandatory for Secret template rendering.
+# Secret is created in each namespace listed under k8snestednamespaces.
+k8sNodeCustomization:
+  # Mandatory.
+  password: "spectro"
+  # Mandatory.
+  edgeHostToken: "NTUXXXXX="
+  # Mandatory.
+  paletteEndpoint: "api.spectrocloud.com"

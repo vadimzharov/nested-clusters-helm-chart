@@ -1,0 +1,30 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: vmo-role-k8s-nested-images
+  namespace: {{ required "k8sTemplateParams.namespace is required" .Values.k8sTemplateParams.namespace }}
+rules:
+- apiGroups: ["cdi.kubevirt.io"]
+  resources: ["datavolumes/source"]
+  verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  annotations:
+  name: vmo-rolebinding-k8s-nested-images
+  namespace: {{ required "k8sTemplateParams.namespace is required" .Values.k8sTemplateParams.namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: vmo-role-k8s-nested-images
+subjects:
+{{- range $index, $ns := .Values.k8snestednamespaces }}
+{{- if not $ns.name }}
+{{- fail (printf "k8snestednamespaces[%d].name is required" $index) }}
+{{- end }}
+- kind: ServiceAccount
+  name: default
+  namespace: {{ $ns.name }}
+{{- end }}

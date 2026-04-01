@@ -1,0 +1,64 @@
+{{- with .Values.k8sTemplateParams.k8sVmTemplate }}
+apiVersion: spectrocloud.com/v1
+kind: VmTemplate
+metadata:
+  name: {{ required "k8sVmTemplate.name is required" .name }}
+  namespace: {{ required "k8sTemplateParams.namespace is required" $.Values.k8sTemplateParams.namespace }}
+spec:
+  description: {{ required "k8sVmTemplate.description is required" .description }}
+  displayName: {{ required "k8sVmTemplate.description is required" .description }}
+  icon: https://s3.amazonaws.com/manifests.spectrocloud.com/logos/ubuntu.png
+  runStrategy: {{ required "k8sVmTemplate.runStrategy is required" .runStrategy }}
+  dataVolumeTemplates:
+    - metadata:
+        name: v-k8s-ubuntu
+      spec:
+        source:
+          pvc:
+            name: {{ required "nestedK8sDv.name is required when k8sVmTemplate is set" $.Values.k8sTemplateParams.nestedK8sDv.name }}
+            namespace: {{ required "k8sTemplateParams.namespace is required when k8sVmTemplate is set" $.Values.k8sTemplateParams.namespace }}
+        storage:
+          accessModes:
+            - ReadWriteMany
+          volumeMode: Block
+          resources:
+            requests:
+              storage: {{ required "k8sVmTemplate.storage is required" .storage }}
+  template:
+    metadata:
+      annotations:
+        descheduler.alpha.kubernetes.io/evict: 'true'
+    spec:
+      domain:
+        cpu:
+          cores: {{ required "k8sVmTemplate.cpu is required" .cpu }}
+          sockets: 1
+          threads: 1
+        devices:
+          disks:
+          - name: datavolume-os
+            disk:
+              bus: virtio
+            bootOrder: 1
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+          interfaces:
+            - name: default
+              bridge: {}
+              model: virtio
+        memory:
+          guest: {{ required "k8sVmTemplate.memory is required" .memory }}
+      networks:
+      - multus:
+          networkName: {{ required "k8sVmTemplate.networkName is required" .networkName }}
+        name: default
+      volumes:
+      - dataVolume:
+          name: v-k8s-ubuntu
+        name: datavolume-os
+      - cloudInitNoCloud:
+          secretRef:
+            name: v-k8s-cloudinit
+        name: cloudinitdisk
+{{- end }}
