@@ -1,15 +1,32 @@
 # nested-clusters-helm-chart
 
-This Helm chart creates:
+## Overview
+
+This Helm chart prepares a Spectro Cloud Virtual Machine Orchestrator (VMO) cluster to deploy Nested Kubernetes Clusters based on Edge native architecture. It automates the creation of infrastructure and configuration required to run multiple Nested K8S cluster nodes on the VMO platform.
+
+## What This Chart Creates
+
+The chart creates the following resources on your Spectro Cloud VMO cluster:
+
+- **DataVolume**: Based on Ubuntu 22.04 image, used as the source for Nested K8S cluster node VMs
+- **VmTemplates**: One or multiple templates configured to run Nested Kubernetes cluster nodes (can be customized for different node sizes: small, medium, etc.)
+- **Namespaces**: Dedicated namespaces to host VMs with Nested K8S cluster nodes
+- **ResourceQuotas**: CPU, memory, and storage quotas for each namespace to enforce resource limits
+- **Secrets**: Cloud-init configuration secrets per namespace with Spectro Palette agent settings and credentials
+- **RBAC**: Role and RoleBinding to enable DataVolume clone operations from the golden image namespace to nested cluster namespaces
+
+### Specific Resources Generated
 
 - One `Namespace` per item in `.Values.k8snamespaces`
-- One `ResourceQuota` named `nested-k8s-quota` only when quota settings are available
+- One `ResourceQuota` named `nested-k8s-quota` per namespace (when quota settings are available)
 - One `DataVolume` when `.Values.k8sTemplateParams.nestedK8sDv` is configured
-- One `VmTemplate` when `.Values.k8sTemplateParams.k8sVmTemplate` is configured
+- Multiple `VmTemplate` resources from the list in `.Values.k8sTemplateParams.k8sVmTemplate` (supports small, medium, large node configurations)
 - One `Role` and one `RoleBinding` for DataVolume clone access in `.Values.k8sTemplateParams.namespace`
 - One `Secret` named `v-k8s-cloudinit` in each namespace from `.Values.k8snamespaces`
 
-Both resources include `helm.sh/resource-policy: keep`, so Helm will not delete them on uninstall or when they are removed from values during upgrades.
+### Resource Protection
+
+Resources include `helm.sh/resource-policy: keep`, so Helm will not delete them on uninstall or when they are removed from values during upgrades, protecting your infrastructure from accidental deletion.
 
 ## Values
 
