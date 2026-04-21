@@ -1,3 +1,23 @@
+# Mandatory: list of namespaces managed by this chart.
+# Each entry must include `name` and `edgeHostToken`.
+k8snamespaces:
+  - name: vmo-golden-images
+    # Mandatory: used by cloud-init Secret for this namespace.
+    edgeHostToken: "NTUXXXXX="
+    # Optional: namespace-specific quota override (merged over defaultQuota).
+    # If omitted, defaultQuota applies.
+    # quota:
+    #   requests:
+    #     cpu: "1"
+    #     memory: "2Gi"
+    #     storage: "10Gi"
+    #   limits:
+    #     cpu: "2"
+    #     memory: "4Gi"
+    #     storage: "20Gi"
+    #   storageClassRequests:
+    #     gp3: "100Gi"
+
 # Default ResourceQuota applied to each namespace when namespace-specific quota is not provided.
 # Optional: if removed entirely, no default quota is used.
 defaultQuota:
@@ -23,24 +43,6 @@ defaultQuota:
     gp3: "500Gi"
     fast-ssd: "100Gi"
 
-# Mandatory: list of namespaces managed by this chart.
-# Each entry must include `name`.
-k8snestednamespaces:
-  - name: vmo-golden-images
-    # Optional: namespace-specific quota override (merged over defaultQuota).
-    # If omitted, defaultQuota applies.
-    # quota:
-    #   requests:
-    #     cpu: "1"
-    #     memory: "2Gi"
-    #     storage: "10Gi"
-    #   limits:
-    #     cpu: "2"
-    #     memory: "4Gi"
-    #     storage: "20Gi"
-    #   storageClassRequests:
-    #     gp3: "100Gi"
-
 # Optional: creates DataVolume and/or VmTemplate when nested blocks are set.
 k8sTemplateParams:
   # Mandatory when nestedK8sDv or k8sVmTemplate is set.
@@ -64,32 +66,45 @@ k8sTemplateParams:
       registry:
         url: "docker://us-docker.pkg.dev/palette-images/palette/virtual-machine-orchestrator/os/ubuntu-container-disk:22.04"
 
-  # Optional: creates VmTemplate when this block exists.
+  # Optional: creates VmTemplates when this list contains items.
   k8sVmTemplate:
-    # Mandatory when k8sVmTemplate is set.
-    name: "ubuntu-2204-k8s"
-    # Mandatory when k8sVmTemplate is set.
-    # Used for both VmTemplate spec.description and spec.displayName.
-    description: "Virtual Kubernetes node (Ubuntu)"
-    # Mandatory when k8sVmTemplate is set.
-    runStrategy: "Always"
-    # Mandatory when k8sVmTemplate is set.
-    # Mapped to spec.template.spec.networks[].multus.networkName.
-    networkName: "default/home-vlan-90"
-    # Mandatory when k8sVmTemplate is set.
-    # Mapped to dataVolumeTemplates[].spec.storage.resources.requests.storage.
-    storage: "50Gi"
-    # Mandatory when k8sVmTemplate is set.
-    cpu: 4
-    # Mandatory when k8sVmTemplate is set.
-    memory: "6Gi"
+    - # Mandatory when k8sVmTemplate item is set.
+      name: "ubuntu-k8s-node-small"
+      # Mandatory when k8sVmTemplate item is set.
+      # Used for both VmTemplate spec.description and spec.displayName.
+      description: "Virtual Kubernetes node small (Ubuntu)"
+      # Mandatory when k8sVmTemplate item is set.
+      runStrategy: "Always"
+      # Mandatory when k8sVmTemplate item is set.
+      # Mapped to spec.template.spec.networks[].multus.networkName.
+      networkName: "default/home-vlan-90"
+      # Mandatory when k8sVmTemplate item is set.
+      # Mapped to dataVolumeTemplates[].spec.storage.resources.requests.storage.
+      storage: "50Gi"
+      # Mandatory when k8sVmTemplate item is set.
+      cpu: 4
+      # Mandatory when k8sVmTemplate item is set.
+      memory: "6Gi"
+      # Mandatory for Secret template rendering.
+      # Secret is created in each namespace listed under k8snamespaces.
+      password: "spectro"
+      # Mandatory for Secret template rendering.
+      paletteEndpoint: "api.spectrocloud.com"
 
-# Mandatory for Secret template rendering.
-# Secret is created in each namespace listed under k8snestednamespaces.
-k8sNodeCustomization:
-  # Mandatory.
-  password: "spectro"
-  # Mandatory.
-  edgeHostToken: "NTUXXXXX="
-  # Mandatory.
-  paletteEndpoint: "api.spectrocloud.com"
+    - # Mandatory when k8sVmTemplate item is set.
+      name: "ubuntu-k8s-node-medium"
+      # Mandatory when k8sVmTemplate item is set.
+      # Used for both VmTemplate spec.description and spec.displayName.
+      description: "Virtual Kubernetes node medium (Ubuntu)"
+      # Mandatory when k8sVmTemplate item is set.
+      runStrategy: "Always"
+      # Mandatory when k8sVmTemplate item is set.
+      # Mapped to spec.template.spec.networks[].multus.networkName.
+      networkName: "default/home-vlan-90"
+      # Mandatory when k8sVmTemplate item is set.
+      # Mapped to dataVolumeTemplates[].spec.storage.resources.requests.storage.
+      storage: "50Gi"
+      # Mandatory when k8sVmTemplate item is set.
+      cpu: 6
+      # Mandatory when k8sVmTemplate item is set.
+      memory: "8Gi"

@@ -20,9 +20,9 @@ roleRef:
   kind: Role
   name: vmo-role-k8s-nested-images
 subjects:
-{{- range $index, $ns := .Values.k8snestednamespaces }}
+{{- range $index, $ns := .Values.k8snamespaces }}
 {{- if not $ns.name }}
-{{- fail (printf "k8snestednamespaces[%d].name is required" $index) }}
+{{- fail (printf "k8snamespaces[%d].name is required" $index) }}
 {{- end }}
 - kind: ServiceAccount
   name: default

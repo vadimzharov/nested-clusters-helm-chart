@@ -2,12 +2,12 @@
 
 This Helm chart creates:
 
-- One `Namespace` per item in `.Values.k8snestednamespaces`
+- One `Namespace` per item in `.Values.k8snamespaces`
 - One `ResourceQuota` named `nested-k8s-quota` only when quota settings are available
 - One `DataVolume` when `.Values.k8sTemplateParams.nestedK8sDv` is configured
 - One `VmTemplate` when `.Values.k8sTemplateParams.k8sVmTemplate` is configured
 - One `Role` and one `RoleBinding` for DataVolume clone access in `.Values.k8sTemplateParams.namespace`
-- One `Secret` named `v-k8s-cloudinit` in each namespace from `.Values.k8snestednamespaces`
+- One `Secret` named `v-k8s-cloudinit` in each namespace from `.Values.k8snamespaces`
 
 Both resources include `helm.sh/resource-policy: keep`, so Helm will not delete them on uninstall or when they are removed from values during upgrades.
 
@@ -16,18 +16,9 @@ Both resources include `helm.sh/resource-policy: keep`, so Helm will not delete 
 ### Full schema
 
 ```yaml
-defaultQuota:
-  requests:
-    cpu: "1"
-    memory: "2Gi"
-  limits:
-    cpu: "2"
-    memory: "4Gi"
-  storageClassRequests:
-    gp3: "500Gi"
-
-k8snestednamespaces:
+k8snamespaces:
   - name: team-a
+    edgeHostToken: "NTUXXXXX="
     quota:
       requests:
         cpu: "1"
@@ -37,6 +28,16 @@ k8snestednamespaces:
         memory: "4Gi"
       storageClassRequests:
         gp3: "200Gi"
+
+defaultQuota:
+  requests:
+    cpu: "1"
+    memory: "2Gi"
+  limits:
+    cpu: "2"
+    memory: "4Gi"
+  storageClassRequests:
+    gp3: "500Gi"
 
 k8sTemplateParams:
   namespace: "vmo-golden-images"
@@ -58,18 +59,15 @@ k8sTemplateParams:
     storage: "50Gi"
     cpu: 4
     memory: "6Gi"
-
-k8sNodeCustomization:
-  password: "spectro"
-  edgeHostToken: "NTUXXXXX="
-  paletteEndpoint: "api.spectrocloud.com"
+    password: "spectro"
+    paletteEndpoint: "api.spectrocloud.com"
 ```
 
 ### Behavior
 
-- If `k8snestednamespaces[].quota` is set, it is used for that namespace.
-- If `k8snestednamespaces[].quota` is not set, `defaultQuota` is used.
-- If neither `k8snestednamespaces[].quota` nor `defaultQuota` is set, no `ResourceQuota` is created for that namespace.
+- If `k8snamespaces[].quota` is set, it is used for that namespace.
+- If `k8snamespaces[].quota` is not set, `defaultQuota` is used.
+- If neither `k8snamespaces[].quota` nor `defaultQuota` is set, no `ResourceQuota` is created for that namespace.
 - Storage quota can be set globally (`requests.storage`) and/or per storage class (`storageClassRequests`).
 - A `ResourceQuota` is still created when only `storageClassRequests` is set (without `requests.storage`).
 
@@ -86,7 +84,7 @@ defaultQuota:
   storageClassRequests:
     gp3: "500Gi"
 
-k8snestednamespaces:
+k8snamespaces:
   - name: team-a
   - name: team-b
 ```
@@ -104,7 +102,7 @@ defaultQuota:
   storageClassRequests:
     gp3: "500Gi"
 
-k8snestednamespaces:
+k8snamespaces:
   - name: team-a
   - name: team-b
     quota:
@@ -122,7 +120,7 @@ k8snestednamespaces:
 ### Example: no ResourceQuota creation
 
 ```yaml
-k8snestednamespaces:
+k8snamespaces:
   - name: team-a
   - name: team-b
 ```
@@ -134,7 +132,7 @@ defaultQuota:
   storageClassRequests:
     gp3: "250Gi"
 
-k8snestednamespaces:
+k8snamespaces:
   - name: team-a
   - name: team-b
     quota:
@@ -200,6 +198,8 @@ Supported fields:
 - `k8sTemplateParams.k8sVmTemplate.storage`
 - `k8sTemplateParams.k8sVmTemplate.cpu`
 - `k8sTemplateParams.k8sVmTemplate.memory`
+- `k8sTemplateParams.k8sVmTemplate.password` (used by cloud-init secret)
+- `k8sTemplateParams.k8sVmTemplate.paletteEndpoint` (used by cloud-init secret)
 
 Notes:
 
@@ -224,25 +224,35 @@ k8sTemplateParams:
 
 ## Secret
 
-The chart renders `templates/k8s-secret.yaml` once per namespace listed in `k8snestednamespaces`.
+The chart renders `templates/k8s-secret.yaml` once per namespace listed in `k8snamespaces`.
 
 Supported fields:
 
-- `k8sNodeCustomization.password`
-- `k8sNodeCustomization.edgeHostToken`
-- `k8sNodeCustomization.paletteEndpoint`
+- `k8sTemplateParams.k8sVmTemplate.password`
+- `k8sTemplateParams.k8sVmTemplate.paletteEndpoint`
+- `k8snamespaces[].edgeHostToken`
 
 Example:
 
 ```yaml
-k8snestednamespaces:
+k8snamespaces:
   - name: team-a
+    edgeHostToken: "NTUXXXXX="
   - name: team-b
+    edgeHostToken: "NTUYYYYY="
 
-k8sNodeCustomization:
-  password: "spectro"
-  edgeHostToken: "NTUXXXXX="
-  paletteEndpoint: "api.spectrocloud.com"
+k8sTemplateParams:
+  namespace: "vmo-golden-images"
+  k8sVmTemplate:
+    name: "ubuntu-2204-k8s"
+    description: "Virtual Kubernetes node (Ubuntu)"
+    runStrategy: "Always"
+    networkName: "default/home-vlan-90"
+    storage: "50Gi"
+    cpu: 4
+    memory: "6Gi"
+    password: "spectro"
+    paletteEndpoint: "api.spectrocloud.com"
 ```
 
 ## DataVolume Clone RBAC
@@ -255,11 +265,11 @@ The chart renders `templates/k8s-dv-clone-rbac.yaml` with fixed resource names:
 Behavior:
 
 - Both resources are created in `k8sTemplateParams.namespace`.
-- `RoleBinding.subjects` is generated from `k8snestednamespaces`.
-- For each namespace in `k8snestednamespaces`, a subject is added with:
+- `RoleBinding.subjects` is generated from `k8snamespaces`.
+- For each namespace in `k8snamespaces`, a subject is added with:
   - `kind: ServiceAccount`
   - `name: default`
-  - `namespace: <k8snestednamespaces[].name>`
+  - `namespace: <k8snamespaces[].name>`
 
 ## Install
 

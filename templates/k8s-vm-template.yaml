@@ -1,14 +1,14 @@
-{{- with .Values.k8sTemplateParams.k8sVmTemplate }}
+{{- range $index, $tpl := .Values.k8sTemplateParams.k8sVmTemplate }}
 apiVersion: spectrocloud.com/v1
 kind: VmTemplate
 metadata:
-  name: {{ required "k8sVmTemplate.name is required" .name }}
+  name: {{ required (printf "k8sTemplateParams.k8sVmTemplate[%d].name is required" $index) $tpl.name }}
   namespace: {{ required "k8sTemplateParams.namespace is required" $.Values.k8sTemplateParams.namespace }}
 spec:
-  description: {{ required "k8sVmTemplate.description is required" .description }}
-  displayName: {{ required "k8sVmTemplate.description is required" .description }}
+  description: {{ required (printf "k8sTemplateParams.k8sVmTemplate[%d].description is required" $index) $tpl.description }}
+  displayName: {{ required (printf "k8sTemplateParams.k8sVmTemplate[%d].description is required" $index) $tpl.description }}
   icon: https://s3.amazonaws.com/manifests.spectrocloud.com/logos/ubuntu.png
-  runStrategy: {{ required "k8sVmTemplate.runStrategy is required" .runStrategy }}
+  runStrategy: {{ required (printf "k8sTemplateParams.k8sVmTemplate[%d].runStrategy is required" $index) $tpl.runStrategy }}
   dataVolumeTemplates:
     - metadata:
         name: v-k8s-ubuntu
@@ -23,7 +23,7 @@ spec:
           volumeMode: Block
           resources:
             requests:
-              storage: {{ required "k8sVmTemplate.storage is required" .storage }}
+              storage: {{ required (printf "k8sTemplateParams.k8sVmTemplate[%d].storage is required" $index) $tpl.storage }}
   template:
     metadata:
       annotations:
@@ -31,7 +31,7 @@ spec:
     spec:
       domain:
         cpu:
-          cores: {{ required "k8sVmTemplate.cpu is required" .cpu }}
+          cores: {{ required (printf "k8sTemplateParams.k8sVmTemplate[%d].cpu is required" $index) $tpl.cpu }}
           sockets: 1
           threads: 1
         devices:
@@ -48,10 +48,10 @@ spec:
               bridge: {}
               model: virtio
         memory:
-          guest: {{ required "k8sVmTemplate.memory is required" .memory }}
+          guest: {{ required (printf "k8sTemplateParams.k8sVmTemplate[%d].memory is required" $index) $tpl.memory }}
       networks:
       - multus:
-          networkName: {{ required "k8sVmTemplate.networkName is required" .networkName }}
+          networkName: {{ required (printf "k8sTemplateParams.k8sVmTemplate[%d].networkName is required" $index) $tpl.networkName }}
         name: default
       volumes:
       - dataVolume:
@@ -61,4 +61,5 @@ spec:
           secretRef:
             name: v-k8s-cloudinit
         name: cloudinitdisk
+---
 {{- end }}
